@@ -3,10 +3,13 @@
 
 import ctypes as ct
 import os
+from enum import IntEnum
 from fcntl import ioctl
-from typing import Tuple
+from typing import Optional, Tuple
 
-from _utils import TypedStructure
+from _utils import SCSIError, SCSIStatus, TypedStructure
+
+MAX_SENSE_SIZE = 32
 
 # Any global constants and structs from here on out are as defined in
 # the <linux/scsi/sg.h> header, unless otherwise specified.
@@ -18,6 +21,10 @@ SG_DXFER_FROM_DEV = -3
 
 SG_GET_VERSION_NUM = 0x2282
 SG_IO = 0x2285
+
+SG_INFO_OK_MASK = 0x1
+SG_INFO_OK = 0x0
+SG_INFO_CHECK = 0x1
 
 
 class SGIOHeader(TypedStructure):
@@ -43,6 +50,55 @@ class SGIOHeader(TypedStructure):
     resid: ct.c_int
     duration: ct.c_uint
     info: ct.c_uint
+
+
+# This enum, as well as the DriverStatus enum, represent the relevant
+# constants that are defined in <linux/scsi/scsi.h>.
+class HostStatus(IntEnum):
+    OK = 0x00
+    NO_CONNECT = 0x01
+    BUS_BUSY = 0x02
+    TIME_OUT = 0x03
+    BAD_TARGET = 0x04
+    ABORT = 0x05
+    PARITY = 0x06
+    ERROR = 0x07
+    RESET = 0x08
+    BAD_INTR = 0x09
+    PASSTHROUGH = 0x0a
+    SOFT_ERROR = 0x0b
+    IMM_RETRY = 0x0c
+    REQUEUE = 0x0d
+    TRANSPORT_DISRUPTED = 0x0e
+    TRANSPORT_FAILFAST = 0x0f
+    TARGET_FAILURE = 0x10
+    NEXUS_FAILURE = 0x12
+    ALLOC_FAILURE = 0x12
+    MEDIUM_ERROR = 0x13
+
+    def raise_if_bad(self, message: str):
+        if self is not HostStatus.OK:
+            cls_name = type(self).__name__
+            raise SCSIError(f"{cls_name}.{self.name}: {message}")
+
+
+# TODO: It could be worth adding another enum for the DriverSuggestion
+# part of the response. Right now, that must be masked out for this.
+class DriverStatus(IntEnum):
+    OK = 0x00
+    BUSY = 0x01
+    SOFT = 0x02
+    MEDIA = 0x03
+    ERROR = 0x04
+    INVALID = 0x05
+    TIMEOUT = 0x06
+    HARD = 0x07
+    SENSE = 0x08
+
+    def raise_if_bad(self, message: str):
+        if self is not DriverStatus.OK:
+            cls_name = type(self).__name__
+            raise SCSIError(f"{cls_name}.{self.name}: {message}")
 
 
 def _check_sg_version(device: int) -> Tuple[int, int, int]:
