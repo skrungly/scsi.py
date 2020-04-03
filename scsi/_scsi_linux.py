@@ -116,6 +116,58 @@ def _check_sg_version(device: int) -> Tuple[int, int, int]:
     return ver_major, ver_minor, ver_micro
 
 
+def _check_for_errors(sgio_hdr: SGIOHeader, sense_buffer: bytes):
+    if (sgio_hdr.info & SG_INFO_OK_MASK) != SG_INFO_OK:
+        status = SCSIStatus(sgio_hdr.status.value)
+        status_info = f"status buffer: {status.hex()}"
+
+        if status is SCSIStatus.CHECK_CONDITION:
+            status.raise_if_bad(status_info)
+
+        status.raise_if_bad(status_info)
+
+        # the 0x0f mask on the driver status code makes sure we only
+        # get the status code itself, and not the suggestion. TODO: we
+        # could implement the suggestion as a new enum at some point.
+        DriverStatus(sgio_hdr.driver_status & 0x0f).raise_if_bad(status_info)
+        HostStatus(sgio_hdr.host_status).raise_if_bad(status_info)
+
+        # i think all of our bases are covered at this point, but we
+        # should make sure we don't continue silently from this state.
+        # TODO: perhaps this error message can be made more useful by
+        # providing a full dump of the SGIOHeader in some format?
+        raise SCSIError("An unknown error occurred.")
+
+
+def _execute_command(
+    device: int,
+    cdb: bytes,
+    buffer: bytes,
+    timeout: int,
+    direction: int,
+):
+    sense_buffer = bytes(MAX_SENSE_SIZE)
+
+    sgio_hdr = SGIOHeader(
+        interface_id=SG_INTERFACE_ID_ORIG,
+
+        cmdp=cdb,
+        cmd_len=len(cdb),
+
+        dxfer_direction=direction,
+        dxferp=buffer,
+        dxfer_len=len(buffer),
+
+        sbp=sense_buffer,
+        mx_sb_len=MAX_SENSE_SIZE,
+        timeout=timeout,
+    )
+
+    ioctl(device, SG_IO, sgio_hdr)
+
+    _check_for_errors(sgio_hdr, sense_buffer)
+
+
 def scsi_open(device_path: os.PathLike) -> int:
     device = os.open(device_path, os.O_RDWR | os.O_NONBLOCK)
 
@@ -135,10 +187,28 @@ def scsi_open(device_path: os.PathLike) -> int:
 
 
 def scsi_read(device: int, cdb: bytes, amount: int, timeout: int) -> bytes:
-    ...
+    buffer = bytes(amount)
+
+    _execute_command(
+        device,
+        cdb,
+        buffer,
+        timeout,
+        SG_DXFER_FROM_DEV
+    )
+
+    return buffer
+
 
 def scsi_write(device: int, cdb: bytes, buffer: bytes, timeout: int) -> None:
-    ...
+    _execute_command(
+        device,
+        cdb,
+        buffer,
+        timeout,
+        SG_DXFER_TO_DEV
+    )
+
 
 def scsi_close(device: int) -> None:
     os.close(device)
