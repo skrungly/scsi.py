@@ -175,12 +175,12 @@ def scsi_open(device_path: os.PathLike) -> int:
     # Generic device yet. however, by querying the SG driver version
     # we can check that the SG driver is not too outdated, while also
     # ensuring that we have indeed opened an actual SG device.
-    ver_major, _, _ = _check_sg_version(device)
+    ver_major, ver_minor, ver_micro = _check_sg_version(device)
 
     if ver_major < 3:
         # earlier driver versions do not have the SG_IO ioctl we use.
         raise NotImplementedError(
-            f"Outdated SG driver: {ver_major}.{ver_micro}.{ver_minor}"
+            f"Outdated SG driver: {ver_major}.{ver_minor}.{ver_micro}"
         )
 
     return device
