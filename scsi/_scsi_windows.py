@@ -8,10 +8,10 @@ import os
 def scsi_open(device_path: os.PathLike) -> int:
     ...
 
-def scsi_read(device: int, command: bytes, amount: int, timeout: int) -> bytes:
+def scsi_read(device: int, cdb: bytes, amount: int, timeout: int) -> bytes:
     ...
 
-def scsi_write(device: int, command: bytes, buffer: bytes) -> None:
+def scsi_write(device: int, cdb: bytes, buffer: bytes, timeout: int) -> None:
     ...
 
 def scsi_close(device: int) -> None:

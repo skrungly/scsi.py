@@ -3,6 +3,8 @@
 
 import ctypes as ct
 import os
+from fcntl import ioctl
+from typing import Tuple
 
 from _utils import TypedStructure
 
@@ -43,14 +45,44 @@ class SGIOHeader(TypedStructure):
     info: ct.c_uint
 
 
+def _check_sg_version(device: int) -> Tuple[int, int, int]:
+    version_buffer = ct.c_int()
+    ioctl(device, SG_GET_VERSION_NUM, version_buffer)
+
+    # if the version is X.Y.Z, then the number in the `version_buffer`
+    # corresponds to (X * 10000 + Y * 100 + Z). let's interpret that.
+    version = version_buffer.value
+
+    ver_major = version // 10000
+    ver_minor = (version % 10000) // 100
+    ver_micro = version % 100
+
+    return ver_major, ver_minor, ver_micro
+
+
 def scsi_open(device_path: os.PathLike) -> int:
+    device = os.open(device_path, os.O_RDWR | os.O_NONBLOCK)
+
+    # we don't know if the new file handle actually refers to a SCSI
+    # Generic device yet. however, by querying the SG driver version
+    # we can check that the SG driver is not too outdated, while also
+    # ensuring that we have indeed opened an actual SG device.
+    ver_major, _, _ = _check_sg_version(device)
+
+    if ver_major < 3:
+        # earlier driver versions do not have the SG_IO ioctl we use.
+        raise NotImplementedError(
+            f"Outdated SG driver: {ver_major}.{ver_micro}.{ver_minor}"
+        )
+
+    return device
+
+
+def scsi_read(device: int, cdb: bytes, amount: int, timeout: int) -> bytes:
     ...
 
-def scsi_read(device: int, command: bytes, amount: int, timeout: int) -> bytes:
-    ...
-
-def scsi_write(device: int, command: bytes, buffer: bytes) -> None:
+def scsi_write(device: int, cdb: bytes, buffer: bytes, timeout: int) -> None:
     ...
 
 def scsi_close(device: int) -> None:
-    ...
+    os.close(device)
