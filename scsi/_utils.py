@@ -1,5 +1,6 @@
 import ctypes as ct
 from enum import IntEnum
+from typing import Optional
 
 # the type of `Structure` can be found in the `_ctypes` module, but we
 # cannot just import it because the `_ctypes` module does not export
@@ -31,7 +32,7 @@ class SCSIStatus(IntEnum):
     ACA_ACTIVE = 0x30
     TASK_ABORTED = 0x40
 
-    def raise_if_bad(self, message: str):
+    def raise_if_bad(self, message: Optional[str] = None):
         if self is not SCSIStatus.GOOD:
             raise SCSIStatusError(self, message)
 
@@ -47,9 +48,12 @@ class SCSIError(Exception):
 
 
 class SCSIStatusError(SCSIError):
-    def __init__(self, status: SCSIStatus, message: str):
+    def __init__(self, status: SCSIStatus, message: Optional[str] = None):
         self.status = status
         self.message = message
 
     def __str__(self):
+        if self.message is None:
+            return self.status.name
+
         return f"{self.status.name}: {self.message}"
