@@ -117,6 +117,47 @@ def _device_io_control(
     _raise_last_error()
 
 
+def _execute_command(
+    handle: int,
+    cdb: bytes,
+    buffer: bytes,
+    timeout: int,
+    direction: int,
+):
+
+    # account for the extra sense buffer we have on the end
+    header_size = ct.sizeof(SCSIPassThroughDirect) - MAX_SENSE_SIZE
+    sense_buffer = bytes(MAX_SENSE_SIZE)
+
+    scsi_header = SCSIPassThroughDirect(
+        length=header_size,
+        cdb_length=len(cdb),
+        sense_info_length=MAX_SENSE_SIZE,
+        data_in=direction,
+        data_transfer_length=len(buffer),
+        timeout_value=timeout,
+        data_buffer=buffer,
+        sense_info_offset=header_size,
+        cdb=cdb,
+        sense_buffer=sense_buffer
+    )
+
+    scsi_header_buffer = ct.string_at(
+        ct.addressof(scsi_header),
+        ct.sizeof(scsi_header),
+    )
+
+    _device_io_control(
+        handle,
+        IOCTL_SCSI_PASS_THROUGH_DIRECT,
+        scsi_header_buffer,
+        None,
+    )
+
+    # TODO: deal with the `scsi_status` and `sense_buffer` attributes.
+    # these should be used to raise SCSI-specific errors that appear.
+
+
 def _raise_last_error():
     last_error = ct.GetLastError()
     if last_error != 0:
