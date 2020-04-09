@@ -48,7 +48,19 @@ def _raise_last_error():
 
 
 def scsi_open(device_path: os.PathLike) -> int:
-    ...
+    device = create_file_w(
+        device_path,
+        GENERIC_READ | GENERIC_WRITE,
+        FILE_SHARE_READ | FILE_SHARE_WRITE,
+        None,
+        OPEN_EXISTING,
+        FILE_ATTRIBUTE_NORMAL,
+        None,
+    )
+
+    _raise_last_error()
+
+    return device
 
 def scsi_read(device: int, cdb: bytes, amount: int, timeout: int) -> bytes:
     ...
@@ -57,4 +69,5 @@ def scsi_write(device: int, cdb: bytes, buffer: bytes, timeout: int) -> None:
     ...
 
 def scsi_close(device: int) -> None:
-    ...
+    close_handle(device)
+    _raise_last_error()
