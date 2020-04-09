@@ -24,6 +24,8 @@ OPEN_EXISTING = 3  # for dwCreationDisposition
 
 FILE_ATTRIBUTE_NORMAL = 0x80  # for dwFlagsAndAttributes
 
+# TODO: rename these functions to make it clear that they are private
+# and that they originate from the win32 API rather than in here.
 create_file_w = ct.windll.kernel32.CreateFileW
 create_file_w.restype = wt.HANDLE
 create_file_w.argtypes = [
@@ -39,6 +41,47 @@ create_file_w.argtypes = [
 close_handle = ct.windll.kernel32.CloseHandle
 close_handle.restype = wt.BOOL
 close_handle.argtypes = [wt.HANDLE]
+
+device_io_control = ct.windll.kernel32.DeviceIoControl
+device_io_control.restype = wt.BOOL
+device_io_control.argtypes = [
+    wt.HANDLE,   # hDevice
+    wt.DWORD,    # dwIoControlCode
+    wt.LPVOID,   # lpInBuffer
+    wt.DWORD,    # nInBufferSize
+    wt.LPVOID,   # lpOutBuffer
+    wt.DWORD,    # nOutBufferSize
+    wt.LPDWORD,  # lpBytesReturned
+    wt.LPVOID,   # lpOverlapped
+]
+
+
+def _device_io_control(
+    handle: int,
+    control_code: int,
+    in_buffer: Optional[ct.Array],
+    out_buffer: Optional[ct.Array],
+):
+    if in_buffer is None:
+        in_buffer = ct.create_string_buffer(0)
+
+    if out_buffer is None:
+        out_buffer = ct.create_string_buffer(0)
+
+    bytes_returned = wt.DWORD()
+
+    result = device_io_control(
+        handle,
+        control_code,
+        in_buffer,
+        len(in_buffer),
+        out_buffer,
+        len(out_buffer),
+        ct.byref(bytes_returned),
+        None
+    )
+
+    _raise_last_error()
 
 
 def _raise_last_error():
