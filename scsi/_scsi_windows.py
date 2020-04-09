@@ -3,6 +3,8 @@
 # use functions like `DeviceIoControl` to do whatever we need to do.
 
 import os
+import ctypes as ct
+import ctypes.wintypes as wt
 
 # these constants are defined in `ntddscsi.h`:
 IOCTL_SCSI_PASS_THROUGH_DIRECT = 0x4d014
@@ -37,6 +39,12 @@ create_file_w.argtypes = [
 close_handle = ct.windll.kernel32.CloseHandle
 close_handle.restype = wt.BOOL
 close_handle.argtypes = [wt.HANDLE]
+
+
+def _raise_last_error():
+    last_error = ct.GetLastError()
+    if last_error != 0:
+        raise ct.WinError(last_error)
 
 
 def scsi_open(device_path: os.PathLike) -> int:
