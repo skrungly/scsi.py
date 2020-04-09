@@ -179,11 +179,30 @@ def scsi_open(device_path: os.PathLike) -> int:
 
     return device
 
+
 def scsi_read(device: int, cdb: bytes, amount: int, timeout: int) -> bytes:
-    ...
+    buffer = bytes(amount)
+
+    _execute_command(
+        device,
+        cdb,
+        buffer,
+        timeout // 1000,
+        SCSI_IOCTL_DATA_IN,
+    )
+
+    return buffer
+
 
 def scsi_write(device: int, cdb: bytes, buffer: bytes, timeout: int) -> None:
-    ...
+    _execute_command(
+        device,
+        cdb,
+        buffer,
+        timeout // 1000,
+        SCSI_IOCTL_DATA_OUT,
+    )
+
 
 def scsi_close(device: int) -> None:
     close_handle(device)
