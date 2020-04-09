@@ -5,6 +5,13 @@
 import os
 import ctypes as ct
 import ctypes.wintypes as wt
+from typing import Optional
+
+from _utils import TypedStructure
+
+# this type is currently not defined, but i have asked about it on the
+# `capi-sig` mailing list to see if that might have been accidental.
+UCHAR = ct.c_ubyte
 
 # these constants are defined in `ntddscsi.h`:
 IOCTL_SCSI_PASS_THROUGH_DIRECT = 0x4d014
@@ -12,6 +19,30 @@ IOCTL_SCSI_PASS_THROUGH_DIRECT = 0x4d014
 SCSI_IOCTL_DATA_OUT = 0
 SCSI_IOCTL_DATA_IN = 1
 SCSI_IOCTL_DATA_UNSPECIFIED = 2
+
+
+class SCSIPassThroughDirect(TypedStructure):
+    length: wt.USHORT
+    scsi_status: UCHAR
+    path_id: UCHAR
+    target_id: UCHAR
+    lun: UCHAR
+    cdb_length: UCHAR
+    sense_info_length: UCHAR
+    data_in: UCHAR
+    data_transfer_length: wt.ULONG
+    timeout_value: wt.ULONG
+    data_buffer: ct.c_char_p
+    sense_info_offset: wt.ULONG
+    cdb: ct.c_char * 16
+
+    # this sense buffer is not defined here in the reference struct.
+    # however, it is nice to have it here because it makes it easy to
+    # compute the value of `sense_info_offset`.
+    # TODO: implement a way of making this array variable-sized. this
+    # would allow for a custom value for maximum sense size if needed.
+    sense_buffer: ct.c_char * AbstractSCSIDevice.MAX_SENSE_SIZE
+
 
 # the following code defines the constants required for CreateFileW:
 GENERIC_READ = 0x80000000  # for dwDesiredAccess
