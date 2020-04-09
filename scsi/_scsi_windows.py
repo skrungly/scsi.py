@@ -9,6 +9,8 @@ from typing import Optional
 
 from _utils import TypedStructure
 
+MAX_SENSE_SIZE = 32
+
 # this type is currently not defined, but i have asked about it on the
 # `capi-sig` mailing list to see if that might have been accidental.
 UCHAR = ct.c_ubyte
@@ -41,7 +43,7 @@ class SCSIPassThroughDirect(TypedStructure):
     # compute the value of `sense_info_offset`.
     # TODO: implement a way of making this array variable-sized. this
     # would allow for a custom value for maximum sense size if needed.
-    sense_buffer: ct.c_char * AbstractSCSIDevice.MAX_SENSE_SIZE
+    sense_buffer: ct.c_char * MAX_SENSE_SIZE
 
 
 # the following code defines the constants required for CreateFileW:
