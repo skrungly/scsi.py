@@ -4,6 +4,40 @@
 
 import os
 
+# these constants are defined in `ntddscsi.h`:
+IOCTL_SCSI_PASS_THROUGH_DIRECT = 0x4d014
+
+SCSI_IOCTL_DATA_OUT = 0
+SCSI_IOCTL_DATA_IN = 1
+SCSI_IOCTL_DATA_UNSPECIFIED = 2
+
+# the following code defines the constants required for CreateFileW:
+GENERIC_READ = 0x80000000  # for dwDesiredAccess
+GENERIC_WRITE = 0x40000000
+
+FILE_SHARE_READ = 0x00000001  # for dwShareMode
+FILE_SHARE_WRITE = 0x00000002
+
+OPEN_EXISTING = 3  # for dwCreationDisposition
+
+FILE_ATTRIBUTE_NORMAL = 0x80  # for dwFlagsAndAttributes
+
+create_file_w = ct.windll.kernel32.CreateFileW
+create_file_w.restype = wt.HANDLE
+create_file_w.argtypes = [
+    wt.LPCWSTR,  # lpFileName
+    wt.DWORD,    # dwDesiredAccess
+    wt.DWORD,    # dwShareMode
+    wt.LPVOID,   # lpSecurityAttributes
+    wt.DWORD,    # dwCreationDisposition
+    wt.DWORD,    # dwFlagsAndAttributes
+    wt.HANDLE,   # hTemplateFile
+]
+
+close_handle = ct.windll.kernel32.CloseHandle
+close_handle.restype = wt.BOOL
+close_handle.argtypes = [wt.HANDLE]
+
 
 def scsi_open(device_path: os.PathLike) -> int:
     ...
