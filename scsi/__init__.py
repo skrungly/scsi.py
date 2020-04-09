@@ -14,3 +14,20 @@ The API provided by this module is given by a small set of functions:
     - scsi_write: Send a command alongside additional data.
     - scsi_close: Close a device with a given file descriptor.
 """
+
+import platform
+
+os_info = platform.uname()
+
+if os_info.system == "Linux":
+    from scsi._scsi_linux import *
+
+# this module has not yet been tested for anything below windows 10.
+# until it is confirmed to work, i am restricting the version here.
+elif os_info.system == "Windows" and os_info.release == "10":
+    from scsi._scsi_windows import *
+
+else:
+    raise NotImplementedError("Your system is not supported.")
+
+__all__ = ["scsi_open", "scsi_read", "scsi_write", "scsi_close"]

@@ -3,7 +3,9 @@ import ctypes as ct
 import ctypes.wintypes as wt
 from typing import Optional
 
-from _utils import TypedStructure
+from scsi._utils import TypedStructure
+
+__all__ = ["scsi_open", "scsi_read", "scsi_write", "scsi_close"]
 
 MAX_SENSE_SIZE = 32
 
