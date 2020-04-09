@@ -1,6 +1,3 @@
-# This submodule should make use of the builtin `fcntl.ioctl` function
-# to interact with the SCSI Generic driver in Linux.
-
 import ctypes as ct
 import os
 from enum import IntEnum
