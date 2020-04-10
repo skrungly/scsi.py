@@ -2,7 +2,7 @@ import ctypes as ct
 import os
 from enum import IntEnum
 from fcntl import ioctl
-from typing import Tuple
+from typing import Optional, Tuple
 
 from scsi._utils import SCSIError, SCSIStatus, TypedStructure
 
@@ -51,9 +51,21 @@ class SGIOHeader(TypedStructure):
     info: ct.c_uint
 
 
+class BaseStatus(IntEnum):
+    def raise_if_bad(self, message: Optional[str] = None):
+        if int(self) != self._GOOD_VALUE:
+            cls_name = type(self).__name__
+            error_string = f"{cls_name}: {self.name}"
+
+            if message is not None:
+                error_string += f" ({message})"
+
+            raise SCSIError(error_string)
+
+
 # This enum, as well as the DriverStatus enum, represent the relevant
 # constants that are defined in <linux/scsi/scsi.h>.
-class HostStatus(IntEnum):
+class HostStatus(BaseStatus):
     OK = 0x00
     NO_CONNECT = 0x01
     BUS_BUSY = 0x02
@@ -75,15 +87,12 @@ class HostStatus(IntEnum):
     ALLOC_FAILURE = 0x12
     MEDIUM_ERROR = 0x13
 
-    def raise_if_bad(self, message: str):
-        if self is not HostStatus.OK:
-            cls_name = type(self).__name__
-            raise SCSIError(f"{cls_name}.{self.name}: {message}")
+    _GOOD_VALUE = OK  # for `raise_if_bad`
 
 
 # TODO: It could be worth adding another enum for the DriverSuggestion
 # part of the response. Right now, that must be masked out for this.
-class DriverStatus(IntEnum):
+class DriverStatus(BaseStatus):
     OK = 0x00
     BUSY = 0x01
     SOFT = 0x02
@@ -94,10 +103,7 @@ class DriverStatus(IntEnum):
     HARD = 0x07
     SENSE = 0x08
 
-    def raise_if_bad(self, message: str):
-        if self is not DriverStatus.OK:
-            cls_name = type(self).__name__
-            raise SCSIError(f"{cls_name}.{self.name}: {message}")
+    _GOOD_VALUE = OK  # for `raise_if_bad`
 
 
 def _check_sg_version(device: int) -> Tuple[int, int, int]:
