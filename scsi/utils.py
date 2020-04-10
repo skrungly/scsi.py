@@ -2,6 +2,8 @@ import ctypes as ct
 from enum import IntEnum
 from typing import Optional
 
+MAX_SENSE_SIZE = 32
+
 # the type of `Structure` can be found in the `_ctypes` module, but we
 # cannot just import it because the `_ctypes` module does not export
 # that type. instead, we can just steal it from the class itself. :D

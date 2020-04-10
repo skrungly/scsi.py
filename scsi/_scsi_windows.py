@@ -3,11 +3,9 @@ import ctypes as ct
 import ctypes.wintypes as wt
 from typing import Optional
 
-from scsi._utils import TypedStructure
+from scsi.utils import MAX_SENSE_SIZE, TypedStructure
 
 __all__ = ["scsi_open", "scsi_read", "scsi_write", "scsi_close"]
-
-MAX_SENSE_SIZE = 32
 
 # this type is currently not defined, but i have asked about it on the
 # `capi-sig` mailing list to see if that might have been accidental.

@@ -4,11 +4,14 @@ from enum import IntEnum
 from fcntl import ioctl
 from typing import Optional, Tuple
 
-from scsi._utils import SCSIError, SCSIStatus, TypedStructure
+from scsi.utils import (
+    MAX_SENSE_SIZE,
+    SCSIError,
+    SCSIStatus,
+    TypedStructure,
+)
 
 __all__ = ["scsi_open", "scsi_read", "scsi_write", "scsi_close"]
-
-MAX_SENSE_SIZE = 32
 
 # Any global constants and structs from here on out are as defined in
 # the <linux/scsi/sg.h> header, unless otherwise specified.
