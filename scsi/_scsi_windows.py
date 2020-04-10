@@ -99,7 +99,7 @@ def _device_io_control(
 
     bytes_returned = wt.DWORD()
 
-    result = _w32_device_io_control(
+    _w32_device_io_control(
         handle,
         control_code,
         in_buffer,

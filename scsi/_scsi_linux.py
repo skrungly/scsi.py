@@ -2,7 +2,7 @@ import ctypes as ct
 import os
 from enum import IntEnum
 from fcntl import ioctl
-from typing import Optional, Tuple
+from typing import Tuple
 
 from scsi._utils import SCSIError, SCSIStatus, TypedStructure
 
