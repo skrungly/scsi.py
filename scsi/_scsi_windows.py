@@ -55,11 +55,9 @@ OPEN_EXISTING = 3  # for dwCreationDisposition
 
 FILE_ATTRIBUTE_NORMAL = 0x80  # for dwFlagsAndAttributes
 
-# TODO: rename these functions to make it clear that they are private
-# and that they originate from the win32 API rather than in here.
-create_file_w = ct.windll.kernel32.CreateFileW
-create_file_w.restype = wt.HANDLE
-create_file_w.argtypes = [
+_w32_create_file_w = ct.windll.kernel32.CreateFileW
+_w32_create_file_w.restype = wt.HANDLE
+_w32_create_file_w.argtypes = [
     wt.LPCWSTR,  # lpFileName
     wt.DWORD,    # dwDesiredAccess
     wt.DWORD,    # dwShareMode
@@ -69,13 +67,13 @@ create_file_w.argtypes = [
     wt.HANDLE,   # hTemplateFile
 ]
 
-close_handle = ct.windll.kernel32.CloseHandle
-close_handle.restype = wt.BOOL
-close_handle.argtypes = [wt.HANDLE]
+_w32_close_handle = ct.windll.kernel32.CloseHandle
+_w32_close_handle.restype = wt.BOOL
+_w32_close_handle.argtypes = [wt.HANDLE]
 
-device_io_control = ct.windll.kernel32.DeviceIoControl
-device_io_control.restype = wt.BOOL
-device_io_control.argtypes = [
+_w32_device_io_control = ct.windll.kernel32.DeviceIoControl
+_w32_device_io_control.restype = wt.BOOL
+_w32_device_io_control.argtypes = [
     wt.HANDLE,   # hDevice
     wt.DWORD,    # dwIoControlCode
     wt.LPVOID,   # lpInBuffer
@@ -101,7 +99,7 @@ def _device_io_control(
 
     bytes_returned = wt.DWORD()
 
-    result = device_io_control(
+    result = _w32_device_io_control(
         handle,
         control_code,
         in_buffer,
@@ -163,7 +161,7 @@ def _raise_last_error():
 
 
 def scsi_open(device_path: os.PathLike) -> int:
-    device = create_file_w(
+    device = _w32_create_file_w(
         device_path,
         GENERIC_READ | GENERIC_WRITE,
         FILE_SHARE_READ | FILE_SHARE_WRITE,
@@ -203,5 +201,5 @@ def scsi_write(device: int, cdb: bytes, buffer: bytes, timeout: int) -> None:
 
 
 def scsi_close(device: int) -> None:
-    close_handle(device)
+    _w32_close_handle(device)
     _raise_last_error()
