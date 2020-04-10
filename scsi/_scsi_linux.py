@@ -123,19 +123,17 @@ def _check_sg_version(device: int) -> Tuple[int, int, int]:
 
 def _check_for_errors(sgio_hdr: SGIOHeader, sense_buffer: bytes):
     if (sgio_hdr.info & SG_INFO_OK_MASK) != SG_INFO_OK:
-        status = SCSIStatus(sgio_hdr.status.value)
-        status_info = f"status buffer: {status.hex()}"
+        status = SCSIStatus(sgio_hdr.status)
 
-        if status is SCSIStatus.CHECK_CONDITION:
-            status.raise_if_bad(status_info)
+        buffer = ct.string_at(sgio_hdr.sbp, size=sgio_hdr.sb_len_wr)
+        sense_info = f"sense buffer: {buffer.hex()}"
 
-        status.raise_if_bad(status_info)
+        status.raise_if_bad(sense_info)
 
         # the 0x0f mask on the driver status code makes sure we only
-        # get the status code itself, and not the suggestion. TODO: we
-        # could implement the suggestion as a new enum at some point.
-        DriverStatus(sgio_hdr.driver_status & 0x0f).raise_if_bad(status_info)
-        HostStatus(sgio_hdr.host_status).raise_if_bad(status_info)
+        # get the status code itself, and not the suggestion.
+        DriverStatus(sgio_hdr.driver_status & 0x0f).raise_if_bad()
+        HostStatus(sgio_hdr.host_status).raise_if_bad()
 
         # i think all of our bases are covered at this point, but we
         # should make sure we don't continue silently from this state.
